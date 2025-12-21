@@ -1,0 +1,171 @@
+﻿@page "/components"
+@using Domain.Entities
+@using Domain.Enums
+@using web.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+@rendermode InteractiveServer
+
+<PageTitle>PC Components - Price Comparison</PageTitle>
+
+<h3>PC Components Price Comparison</h3>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label>Filter by Type:</label>
+        <select class="form-select" @onchange="FilterByType">
+            <option value="">All Components</option>
+            @foreach (var type in Enum.GetValues<ComponentType>())
+            {
+                <option value="@type">@type</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label>Filter by Manufacturer:</label>
+        <select class="form-select" @onchange="FilterByManufacturer">
+            <option value="">All Manufacturers</option>
+            @foreach (var manu in Enum.GetValues<Manufacturer>())
+            {
+                <option value="@manu">@manu</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label>Search:</label>
+        <input type="text" class="form-control" @bind="searchTerm" @bind:event="oninput" placeholder="Search components..." />
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!filteredComponents.Any())
+{
+    <div class="alert alert-info">
+        No components found. Run the app to seed sample data.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var component in filteredComponents)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(component.ImageUrl))
+                    {
+                        <img src="@component.ImageUrl" class="card-img-top" alt="@component.Name" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@component.Name</h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary">@component.Type</span>
+                            <span class="badge bg-secondary">@component.Manufacturer</span>
+                        </p>
+
+                        @if (component.LowestPrice.HasValue)
+                        {
+                            <h4 class="text-success">
+                                From €@component.LowestPrice.Value.ToString("N2")
+                            </h4>
+                        }
+
+                        @if (component.AveragePrice.HasValue)
+                        {
+                            <p class="text-muted">
+                                Avg: €@component.AveragePrice.Value.ToString("N2")
+                            </p>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <a href="/component/@component.Id" class="btn btn-primary btn-sm w-100">
+                            View Prices & Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Component> allComponents = new();
+    private List<Component> filteredComponents = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private ComponentType? selectedType;
+    private Manufacturer? selectedManufacturer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComponents();
+    }
+
+    private async Task LoadComponents()
+    {
+        isLoading = true;
+        allComponents = await DbContext.Components
+            .OrderBy(c => c.Type)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
+
+        ApplyFilters();
+        isLoading = false;
+    }
+
+    private void FilterByType(ChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            selectedType = null;
+        }
+        else
+        {
+            selectedType = Enum.Parse<ComponentType>(e.Value.ToString()!);
+        }
+        ApplyFilters();
+    }
+
+    private void FilterByManufacturer(ChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            selectedManufacturer = null;
+        }
+        else
+        {
+            selectedManufacturer = Enum.Parse<Manufacturer>(e.Value.ToString()!);
+        }
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredComponents = allComponents.AsQueryable().ToList();
+
+
+        if (selectedType.HasValue)
+        {
+            filteredComponents = filteredComponents.Where(c => c.Type == selectedType.Value).ToList();
+        }
+
+        if (selectedManufacturer.HasValue)
+        {
+            filteredComponents = filteredComponents.Where(c => c.Manufacturer == selectedManufacturer.Value).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredComponents = filteredComponents
+                .Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                           (c.Model?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+}

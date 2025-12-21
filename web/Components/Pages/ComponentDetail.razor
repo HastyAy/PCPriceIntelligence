@@ -1,0 +1,351 @@
+﻿@page "/component/{id:int}"
+@using Domain.Entities
+@using Domain.Enums
+@using web.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>@(component?.Name ?? "Component Details")</PageTitle>
+
+@if (isLoading)
+{
+    <div class="text-center mt-5">
+        <div class="spinner-border" role="status"></div>
+    </div>
+}
+else if (component == null)
+{
+    <div class="alert alert-danger">
+        Component not found.
+        <a href="/components">Back to Components</a>
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/components">Components</a></li>
+            <li class="breadcrumb-item active">@component.Name</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4">
+            @if (!string.IsNullOrEmpty(component.ImageUrl))
+            {
+                <img src="@component.ImageUrl" class="img-fluid rounded" alt="@component.Name" />
+            }
+        </div>
+        <div class="col-md-8">
+            <h2>@component.Name</h2>
+            <p>
+                <span class="badge bg-primary fs-6">@component.Type</span>
+                <span class="badge bg-secondary fs-6">@component.Manufacturer</span>
+            </p>
+            
+            @if (!string.IsNullOrEmpty(component.Model))
+            {
+                <p><strong>Model:</strong> @component.Model</p>
+            }
+            
+            @if (!string.IsNullOrEmpty(component.PartNumber))
+            {
+                <p><strong>Part Number:</strong> @component.PartNumber</p>
+            }
+
+            @* Display specifications based on component type *@
+            @if (!string.IsNullOrEmpty(component.SpecificationsJson))
+            {
+                <h4 class="mt-3">Specifications</h4>
+                @RenderSpecifications()
+            }
+        </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <h3>Price Comparison</h3>
+    
+    @if (!prices.Any())
+    {
+        <div class="alert alert-info">No prices available for this component.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Retailer</th>
+                        <th>Price</th>
+                        <th>Shipping</th>
+                        <th>Total</th>
+                        <th>Stock</th>
+                        <th>Last Updated</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var price in prices.OrderBy(p => p.Amount + (p.ShippingCost ?? 0)))
+                    {
+                        <tr class="@(price.Amount == lowestPrice ? "table-success" : "")">
+                            <td>
+                                <strong>@price.Retailer</strong>
+                                @if (price.Amount == lowestPrice)
+                                {
+                                    <span class="badge bg-success ms-2">Best Price</span>
+                                }
+                            </td>
+                            <td>€@price.Amount.ToString("N2")</td>
+                            <td>
+                                @if (price.ShippingCost.HasValue && price.ShippingCost.Value > 0)
+                                {
+                                    <text>€@price.ShippingCost.Value.ToString("N2")</text>
+                                }
+                                else
+                                {
+                                    <span class="text-success">FREE</span>
+                                }
+                            </td>
+                            <td>
+                                <strong>€@((price.Amount + (price.ShippingCost ?? 0)).ToString("N2"))</strong>
+                            </td>
+                            <td>
+                                @if (price.InStock)
+                                {
+                                    <span class="badge bg-success">In Stock</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                }
+                            </td>
+                            <td>@price.ScrapedAt.ToString("g")</td>
+                            <td>
+                                <a href="@price.RetailerUrl" target="_blank" class="btn btn-sm btn-primary">
+                                    Visit Store
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <strong>Price Statistics:</strong><br />
+            Lowest: €@lowestPrice.ToString("N2") | 
+            Average: €@averagePrice.ToString("N2") | 
+            Highest: €@highestPrice.ToString("N2")
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Component? component;
+    private List<Price> prices = new();
+    private bool isLoading = true;
+    
+    private decimal lowestPrice;
+    private decimal averagePrice;
+    private decimal highestPrice;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComponent();
+    }
+
+    private async Task LoadComponent()
+    {
+        isLoading = true;
+        
+        component = await DbContext.Components
+            .FirstOrDefaultAsync(c => c.Id == Id);
+
+        if (component != null)
+        {
+            prices = await DbContext.Prices
+                .Where(p => p.ComponentId == Id)
+                .OrderBy(p => p.Amount)
+                .ToListAsync();
+
+            if (prices.Any())
+            {
+                lowestPrice = prices.Min(p => p.Amount);
+                averagePrice = prices.Average(p => p.Amount);
+                highestPrice = prices.Max(p => p.Amount);
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private RenderFragment RenderSpecifications()
+    {
+        if (string.IsNullOrEmpty(component?.SpecificationsJson))
+            return builder => { };
+
+        return component.Type switch
+        {
+            ComponentType.GPU => RenderGPUSpecs(),
+            ComponentType.CPU => RenderCPUSpecs(),
+            ComponentType.RAM => RenderRAMSpecs(),
+            ComponentType.SSD => RenderStorageSpecs(),
+            ComponentType.PSU => RenderPSUSpecs(),
+            _ => builder => { }
+        };
+    }
+
+    private RenderFragment RenderGPUSpecs()
+    {
+        var specs = component?.GetSpecifications<GPUSpecification>();
+        if (specs == null) return builder => { };
+
+        return __builder =>
+        {
+            <dl class="row">
+                <dt class="col-sm-3">VRAM:</dt>
+                <dd class="col-sm-9">@specs.VRAM GB</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Chipset))
+                {
+                    <dt class="col-sm-3">Chipset:</dt>
+                    <dd class="col-sm-9">@specs.Chipset</dd>
+                }
+
+                @if (specs.TDP.HasValue)
+                {
+                    <dt class="col-sm-3">TDP:</dt>
+                    <dd class="col-sm-9">@specs.TDP W</dd>
+                }
+
+                @if (!string.IsNullOrEmpty(specs.Interface))
+                {
+                    <dt class="col-sm-3">Interface:</dt>
+                    <dd class="col-sm-9">@specs.Interface</dd>
+                }
+            </dl>
+        };
+    }
+
+    private RenderFragment RenderCPUSpecs()
+    {
+        var specs = component?.GetSpecifications<CPUSpecification>();
+        if (specs == null) return __builder => { };
+
+        return __builder =>
+        {
+            <dl class="row">
+                <dt class="col-sm-3">Cores/Threads:</dt>
+                <dd class="col-sm-9">@specs.Cores / @specs.Threads</dd>
+
+                <dt class="col-sm-3">Base Clock:</dt>
+                <dd class="col-sm-9">@specs.BaseClock GHz</dd>
+
+                @if (specs.BoostClock.HasValue)
+                {
+                    <dt class="col-sm-3">Boost Clock:</dt>
+                    <dd class="col-sm-9">@specs.BoostClock GHz</dd>
+                }
+
+                <dt class="col-sm-3">TDP:</dt>
+                <dd class="col-sm-9">@specs.TDP W</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Socket))
+                {
+                    <dt class="col-sm-3">Socket:</dt>
+                    <dd class="col-sm-9">@specs.Socket</dd>
+                }
+            </dl>
+        };
+    }
+
+    private RenderFragment RenderRAMSpecs()
+    {
+        var specs = component?.GetSpecifications<RAMSpecification>();
+        if (specs == null) return __builder => { };
+
+        return __builder =>
+        {
+            <dl class="row">
+                <dt class="col-sm-3">Capacity:</dt>
+                <dd class="col-sm-9">@specs.Capacity GB</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Type))
+                {
+                    <dt class="col-sm-3">Type:</dt>
+                    <dd class="col-sm-9">@specs.Type</dd>
+                }
+
+                <dt class="col-sm-3">Speed:</dt>
+                <dd class="col-sm-9">@specs.Speed MHz</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Timings))
+                {
+                    <dt class="col-sm-3">Timings:</dt>
+                    <dd class="col-sm-9">@specs.Timings</dd>
+                }
+            </dl>
+        };
+    }
+
+    private RenderFragment RenderStorageSpecs()
+    {
+        var specs = component?.GetSpecifications<StorageSpecification>();
+        if (specs == null) return __builder => { };
+
+        return __builder =>
+        {
+            <dl class="row">
+                <dt class="col-sm-3">Capacity:</dt>
+                <dd class="col-sm-9">@specs.Capacity GB</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Interface))
+                {
+                    <dt class="col-sm-3">Interface:</dt>
+                    <dd class="col-sm-9">@specs.Interface</dd>
+                }
+
+                @if (specs.ReadSpeed.HasValue)
+                {
+                    <dt class="col-sm-3">Read Speed:</dt>
+                    <dd class="col-sm-9">@specs.ReadSpeed MB/s</dd>
+                }
+
+                @if (specs.WriteSpeed.HasValue)
+                {
+                    <dt class="col-sm-3">Write Speed:</dt>
+                    <dd class="col-sm-9">@specs.WriteSpeed MB/s</dd>
+                }
+            </dl>
+        };
+    }
+
+    private RenderFragment RenderPSUSpecs()
+    {
+        var specs = component?.GetSpecifications<PSUSpecification>();
+        if (specs == null) return __builder => { };
+
+        return __builder =>
+        {
+            <dl class="row">
+                <dt class="col-sm-3">Wattage:</dt>
+                <dd class="col-sm-9">@specs.Wattage W</dd>
+
+                @if (!string.IsNullOrEmpty(specs.Efficiency))
+                {
+                    <dt class="col-sm-3">Efficiency:</dt>
+                    <dd class="col-sm-9">@specs.Efficiency</dd>
+                }
+
+                <dt class="col-sm-3">Modular:</dt>
+                <dd class="col-sm-9">@(specs.Modular ? "Yes" : "No")</dd>
+            </dl>
+        };
+    }
+}
