@@ -22,7 +22,7 @@ namespace web.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Domain.Entities.CompatibilityRule", b =>
+            modelBuilder.Entity("Domain.Entities.CPUCoolerSpecification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,40 +30,130 @@ namespace web.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ConditionJson")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ErrorMessage")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                    b.Property<int?>("FanCount")
+                        .HasColumnType("integer");
 
-                    b.Property<bool>("IsActive")
+                    b.Property<int?>("HeightMM")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsLiquidCooled")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("RuleName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Severity")
+                    b.Property<int?>("MaxTDP")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SourceType")
+                    b.Property<string>("SocketCompatibility")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("CPUCoolerSpecifications");
+                });
+
+            modelBuilder.Entity("Domain.Entities.CPUSpecification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<int>("TargetType")
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BaseClock")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal?>("BoostClock")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Cores")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IntegratedGraphics")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("TDP")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Threads")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SourceType", "TargetType");
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
 
-                    b.ToTable("CompatibilityRules");
+                    b.ToTable("CPUSpecifications");
+                });
+
+            modelBuilder.Entity("Domain.Entities.CaseSpecification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BayCount25")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("BayCount35")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DimensionsMM")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExpansionSlots")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FormFactor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("HasTemperedGlass")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasUSB3")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasUSBC")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("MaxCoolerHeightMM")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MaxGPULengthMM")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("VolumeLiters")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("CaseSpecifications");
                 });
 
             modelBuilder.Entity("Domain.Entities.Component", b =>
@@ -81,11 +171,14 @@ namespace web.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("EAN")
-                        .HasColumnType("text");
-
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsQualified")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastUpdated")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("LowestPrice")
                         .HasPrecision(18, 2)
@@ -94,34 +187,138 @@ namespace web.Migrations
                     b.Property<int>("Manufacturer")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Model")
-                        .HasColumnType("text");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("PartNumber")
-                        .HasColumnType("text");
+                    b.Property<int>("OfferCount")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("SpecificationsJson")
-                        .HasColumnType("text");
+                    b.Property<double>("QualityScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<decimal?>("Rating")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EAN");
-
                     b.HasIndex("Manufacturer");
-
-                    b.HasIndex("PartNumber");
 
                     b.HasIndex("Type");
 
                     b.ToTable("Components");
+                });
+
+            modelBuilder.Entity("Domain.Entities.GPUSpecification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("Aux6PinCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Aux8PinCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Chipset")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("HeightMM")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LengthMM")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MemorySize")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MemoryType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("TDP")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("WidthMM")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("GPUSpecifications");
+                });
+
+            modelBuilder.Entity("Domain.Entities.MotherboardSpec", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Chipset")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FormFactor")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("M2SlotCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MaxMemoryCapacityGB")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MaxMemorySpeedMHz")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MaxPCIeGeneration")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("MemorySlots")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MemoryType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PCIeSlots")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PowerConnectors")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Socket")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("MotherboardSpecs");
                 });
 
             modelBuilder.Entity("Domain.Entities.PCBuild", b =>
@@ -164,6 +361,46 @@ namespace web.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PCBuilds");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PSUSpecification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("Aux6PinCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DimensionsMM")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EfficiencyRating")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Modular")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("SATAPowerCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Wattage")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("PSUSpecifications");
                 });
 
             modelBuilder.Entity("Domain.Entities.Price", b =>
@@ -255,7 +492,7 @@ namespace web.Migrations
                     b.ToTable("PriceHistories");
                 });
 
-            modelBuilder.Entity("Domain.Entities.ScrapingJob", b =>
+            modelBuilder.Entity("Domain.Entities.RAMSpecification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -263,43 +500,36 @@ namespace web.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
 
-                    b.Property<int>("ComponentsScraped")
+                    b.Property<int>("ComponentId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ErrorMessage")
+                    b.Property<int>("ModuleCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Speed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Timings")
                         .HasColumnType("text");
 
-                    b.Property<int>("Errors")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsSuccess")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("PricesUpdated")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Retailer")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("Type")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Retailer");
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
 
-                    b.HasIndex("StartedAt");
-
-                    b.ToTable("ScrapingJobs");
+                    b.ToTable("RAMSpecifications");
                 });
 
-            modelBuilder.Entity("Domain.Entities.SearchQuery", b =>
+            modelBuilder.Entity("Domain.Entities.StorageSpecification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -307,33 +537,27 @@ namespace web.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ParsedIntentJson")
+                    b.Property<string>("Interface")
                         .HasColumnType("text");
 
-                    b.Property<string>("Query")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("ResultCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("SearchedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UserId")
+                    b.Property<string>("Type")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SearchedAt");
+                    b.HasIndex("ComponentId")
+                        .IsUnique();
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SearchQueries");
+                    b.ToTable("StorageSpecifications");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -532,6 +756,80 @@ namespace web.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.CPUCoolerSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("CPUCoolerSpec")
+                        .HasForeignKey("Domain.Entities.CPUCoolerSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.CPUSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("CPUSpec")
+                        .HasForeignKey("Domain.Entities.CPUSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.CaseSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("CaseSpec")
+                        .HasForeignKey("Domain.Entities.CaseSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.GPUSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("GPUSpec")
+                        .HasForeignKey("Domain.Entities.GPUSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.MotherboardSpec", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("MotherboardSpec")
+                        .HasForeignKey("Domain.Entities.MotherboardSpec", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PCBuild", b =>
+                {
+                    b.HasOne("web.Data.ApplicationUser", null)
+                        .WithMany("PCBuilds")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Domain.Entities.PSUSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("PSUSpec")
+                        .HasForeignKey("Domain.Entities.PSUSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
             modelBuilder.Entity("Domain.Entities.Price", b =>
                 {
                     b.HasOne("Domain.Entities.Component", "Component")
@@ -548,6 +846,28 @@ namespace web.Migrations
                     b.HasOne("Domain.Entities.Component", "Component")
                         .WithMany("PriceHistories")
                         .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.RAMSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("RAMSpec")
+                        .HasForeignKey("Domain.Entities.RAMSpecification", "ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("Domain.Entities.StorageSpecification", b =>
+                {
+                    b.HasOne("Domain.Entities.Component", "Component")
+                        .WithOne("StorageSpec")
+                        .HasForeignKey("Domain.Entities.StorageSpecification", "ComponentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -607,9 +927,30 @@ namespace web.Migrations
 
             modelBuilder.Entity("Domain.Entities.Component", b =>
                 {
+                    b.Navigation("CPUCoolerSpec");
+
+                    b.Navigation("CPUSpec");
+
+                    b.Navigation("CaseSpec");
+
+                    b.Navigation("GPUSpec");
+
+                    b.Navigation("MotherboardSpec");
+
+                    b.Navigation("PSUSpec");
+
                     b.Navigation("PriceHistories");
 
                     b.Navigation("Prices");
+
+                    b.Navigation("RAMSpec");
+
+                    b.Navigation("StorageSpec");
+                });
+
+            modelBuilder.Entity("web.Data.ApplicationUser", b =>
+                {
+                    b.Navigation("PCBuilds");
                 });
 #pragma warning restore 612, 618
         }

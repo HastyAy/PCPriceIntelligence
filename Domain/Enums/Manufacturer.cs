@@ -2,16 +2,12 @@
 
 public enum Manufacturer
 {
-    // GPU
+    // GPU & CPU
     NVIDIA,
-    AMD_GPU,
-    Intel_GPU,
-
-    // CPU
-    Intel,
     AMD,
+    Intel,
 
-    // Motherboard
+    // Motherboard & Components
     ASUS,
     MSI,
     Gigabyte,
@@ -27,24 +23,20 @@ public enum Manufacturer
     Samsung,
     WesternDigital,
     Seagate,
-    Crucial_Storage,
 
-    // PSU
-    Corsair_PSU,
+    // PSU & Cooling
     BeQuiet,
     Seasonic,
     EVGA,
-
-    // Cooling
     Noctua,
     CoolerMaster,
-    BeQuiet_Cooling,
+    NZXT,
+    Thermaltake,
+    Fractal,
 
-    // Monitor
+    // Monitor later maybe
     Dell,
     LG,
-    Samsung_Monitor,
-    ASUS_Monitor,
 
     Other
 }

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: pcbuilder-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: pcbuilder
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Blazor Server Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pcbuilder-web
+    environment:
+      # Database connection
+      ConnectionStrings__DefaultConnection: "Host=db;Database=pcbuilder;Username=postgres;Password=postgres123"
+      
+      # Gemini API Key (set via environment or .env file)
+      Gemini__ApiKey: ${GEMINI_API_KEY}
+      
+      # Admin credentials (optional - defaults in DbInitializer)
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pcbuilder.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!}
+      
+      # Run DbInitializer in Docker
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -8,7 +8,7 @@
 
 <PageTitle>PC Components - Price Comparison</PageTitle>
 
-<h3>PC Components Price Comparison</h3>
+<h3>PC Components Price</h3>
 
 <div class="row mb-3">
     <div class="col-md-4">
@@ -60,10 +60,18 @@ else
                 <div class="card h-100">
                     @if (!string.IsNullOrEmpty(component.ImageUrl))
                     {
-                        <img src="@component.ImageUrl" class="card-img-top" alt="@component.Name" />
+                        <div class="card-img-wrapper">
+                            <img src="@component.ImageUrl" class="card-img-top component-img" alt="@component.Name" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card-img-wrapper bg-light d-flex align-items-center justify-content-center">
+                            <i class="bi bi-cpu display-4 text-muted"></i>
+                        </div>
                     }
                     <div class="card-body">
-                        <h5 class="card-title">@component.Name</h5>
+                        <h5 class="card-title text-truncate" title="@component.Name">@component.Name</h5>
                         <p class="card-text">
                             <span class="badge bg-primary">@component.Type</span>
                             <span class="badge bg-secondary">@component.Manufacturer</span>
@@ -78,9 +86,16 @@ else
 
                         @if (component.AveragePrice.HasValue)
                         {
-                            <p class="text-muted">
+                            <p class="text-muted mb-1">
                                 Avg: €@component.AveragePrice.Value.ToString("N2")
                             </p>
+                        }
+
+                        @if (component.Rating.HasValue)
+                        {
+                            <small class="text-muted">
+                                <i class="bi bi-star-fill text-warning"></i> @component.Rating.Value.ToString("N1") (@component.ReviewCount reviews)
+                            </small>
                         }
                     </div>
                     <div class="card-footer">
@@ -94,78 +109,22 @@ else
     </div>
 }
 
-@code {
-    private List<Component> allComponents = new();
-    private List<Component> filteredComponents = new();
-    private bool isLoading = true;
-    private string searchTerm = "";
-    private ComponentType? selectedType;
-    private Manufacturer? selectedManufacturer;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadComponents();
+<style>
+    .card-img-wrapper {
+        height: 120px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
     }
 
-    private async Task LoadComponents()
-    {
-        isLoading = true;
-        allComponents = await DbContext.Components
-            .OrderBy(c => c.Type)
-            .ThenBy(c => c.Name)
-            .ToListAsync();
-
-        ApplyFilters();
-        isLoading = false;
+    .component-img {
+        max-height: 100px;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
     }
+</style>
 
-    private void FilterByType(ChangeEventArgs e)
-    {
-        if (string.IsNullOrEmpty(e.Value?.ToString()))
-        {
-            selectedType = null;
-        }
-        else
-        {
-            selectedType = Enum.Parse<ComponentType>(e.Value.ToString()!);
-        }
-        ApplyFilters();
-    }
-
-    private void FilterByManufacturer(ChangeEventArgs e)
-    {
-        if (string.IsNullOrEmpty(e.Value?.ToString()))
-        {
-            selectedManufacturer = null;
-        }
-        else
-        {
-            selectedManufacturer = Enum.Parse<Manufacturer>(e.Value.ToString()!);
-        }
-        ApplyFilters();
-    }
-
-    private void ApplyFilters()
-    {
-        filteredComponents = allComponents.AsQueryable().ToList();
-
-
-        if (selectedType.HasValue)
-        {
-            filteredComponents = filteredComponents.Where(c => c.Type == selectedType.Value).ToList();
-        }
-
-        if (selectedManufacturer.HasValue)
-        {
-            filteredComponents = filteredComponents.Where(c => c.Manufacturer == selectedManufacturer.Value).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            filteredComponents = filteredComponents
-                .Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                           (c.Model?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
-                .ToList();
-        }
-    }
-}

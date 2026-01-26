@@ -1,0 +1,181 @@
+﻿@page "/build/{BuildId:int}"
+@using Domain.Entities
+@using Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using web.Services
+@inject BuildService BuildService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>@(build?.Name ?? "Build Details")</PageTitle>
+
+<div class="container py-4">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-3">Loading build...</p>
+        </div>
+    }
+    else if (build == null)
+    {
+        <div class="alert alert-danger">
+            <h4>Build Not Found</h4>
+            <p>This build doesn't exist or you don't have permission to view it.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/my-builds")'>
+                Back to My Builds
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>@build.Name</h1>
+            <button class="btn btn-outline-secondary" @onclick='() => Navigation.NavigateTo("/my-builds")'>
+                <i class="bi bi-arrow-left"></i> Back to My Builds
+            </button>
+        </div>
+
+        <div class="row">
+            <!-- Components List -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Components</h4>
+                    </div>
+                    <div class="card-body">
+                        @if (components.Any())
+                        {
+                            @foreach (var kvp in components)
+                            {
+                                <div class="mb-3 p-3 border rounded bg-light">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3">
+                                            <strong>@GetTypeLabel(kvp.Key)</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div>@kvp.Value.Name</div>
+                                            <small class="text-muted">
+                                                <span class="badge bg-secondary">@kvp.Value.Manufacturer</span>
+                                            </small>
+                                            @* Display spec summary based on component type *@
+                                            <div class="mt-1">
+                                                <small class="text-muted">@GetSpecSummary(kvp.Key, kvp.Value)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            @if (kvp.Value.LowestPrice.HasValue)
+                                            {
+                                                <span class="badge bg-success fs-6">@kvp.Value.LowestPrice.Value.ToString("C2")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary fs-6">N/A</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                No components found in this build.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(build.Notes))
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-card-text"></i> Notes</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>@build.Notes</p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Summary Sidebar -->
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Total Price:</strong>
+                            <h3 class="text-success">@build.TotalPrice.ToString("C2")</h3>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Components:</strong> @components.Count
+                        </div>
+                        <div class="mb-3">
+                            <strong>Created:</strong><br />
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> @build.CreatedAt.ToString("MMM dd, yyyy")
+                            </small>
+                            <br />
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> @build.CreatedAt.ToString("HH:mm")
+                            </small>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Visibility:</strong>
+                            <span class="badge @(build.IsPublic ? "bg-success" : "bg-warning")">
+                                @(build.IsPublic ? "Public" : "Private")
+                            </span>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" @onclick="EditBuild">
+                                <i class="bi bi-pencil"></i> Edit Build
+                            </button>
+                            <button class="btn btn-outline-danger" @onclick="ConfirmDelete">
+                                <i class="bi bi-trash"></i> Delete Build
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteConfirm)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@build?.Name</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteBuild" disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+

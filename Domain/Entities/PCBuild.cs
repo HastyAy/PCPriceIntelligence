@@ -2,7 +2,7 @@
 
 public class PCBuild : BaseEntity
 {
-    public string? UserId { get; set; }  // Link to AspNetUsers (if using Identity)
+    public string? UserId { get; set; }
 
     public string Name { get; set; } = string.Empty;  // "My Gaming Build"
 
@@ -14,5 +14,5 @@ public class PCBuild : BaseEntity
 
     public bool IsPublic { get; set; } = false;
 
-    public string? Notes { get; set; }  // User notes about the build
+    public string? Notes { get; set; } 
 }
