@@ -15,14 +15,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Component> Components => Set<Component>();
     public DbSet<Price> Prices => Set<Price>();
     public DbSet<PriceHistory> PriceHistories => Set<PriceHistory>();
-    public DbSet<CompatibilityRule> CompatibilityRules => Set<CompatibilityRule>();
     public DbSet<PCBuild> PCBuilds => Set<PCBuild>();
-    public DbSet<SearchQuery> SearchQueries => Set<SearchQuery>();
-    public DbSet<ScrapingJob> ScrapingJobs => Set<ScrapingJob>();
 
+    // Specification entities
+    public DbSet<CPUSpecification> CPUSpecifications => Set<CPUSpecification>();
+    public DbSet<GPUSpecification> GPUSpecifications => Set<GPUSpecification>();
+    public DbSet<PSUSpecification> PSUSpecifications => Set<PSUSpecification>();
+    public DbSet<RAMSpecification> RAMSpecifications => Set<RAMSpecification>();
+    public DbSet<StorageSpecification> StorageSpecifications => Set<StorageSpecification>();
+    public DbSet<MotherboardSpec> MotherboardSpecs => Set<MotherboardSpec>();
+    public DbSet<CPUCoolerSpecification> CPUCoolerSpecifications => Set<CPUCoolerSpecification>();
+    public DbSet<CaseSpecification> CaseSpecifications => Set<CaseSpecification>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); // IMPORTANT: Keep Identity tables
+        base.OnModelCreating(modelBuilder);
 
         // Component configuration
         modelBuilder.Entity<Component>(entity =>
@@ -34,10 +40,93 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.Manufacturer);
-            entity.HasIndex(e => e.EAN);
-            entity.HasIndex(e => e.PartNumber);
+
+            // One-to-one relationships with specifications
+            entity.HasOne(e => e.CPUSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<CPUSpecification>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.GPUSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<GPUSpecification>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.PSUSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<PSUSpecification>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.RAMSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<RAMSpecification>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.StorageSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<StorageSpecification>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.MotherboardSpec)
+                .WithOne(s => s.Component)
+                .HasForeignKey<MotherboardSpec>(s => s.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // CPU Cooler
+            modelBuilder.Entity<CPUCoolerSpecification>()
+                .HasOne(c => c.Component)
+                .WithOne(c => c.CPUCoolerSpec)
+                .HasForeignKey<CPUCoolerSpecification>(c => c.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Case
+            modelBuilder.Entity<CaseSpecification>()
+                .HasOne(c => c.Component)
+                .WithOne(c => c.CaseSpec)
+                .HasForeignKey<CaseSpecification>(c => c.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // CPUSpecification configuration
+        modelBuilder.Entity<CPUSpecification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+            entity.Property(e => e.BaseClock).HasPrecision(5, 2);
+            entity.Property(e => e.BoostClock).HasPrecision(5, 2);
+        });
+
+        // GPUSpecification configuration
+        modelBuilder.Entity<GPUSpecification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+        });
+
+        // PSUSpecification configuration
+        modelBuilder.Entity<PSUSpecification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+        });
+
+        // RAMSpecification configuration
+        modelBuilder.Entity<RAMSpecification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+        });
+
+        // StorageSpecification configuration
+        modelBuilder.Entity<StorageSpecification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+        });
+        modelBuilder.Entity<MotherboardSpec>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ComponentId).IsUnique();
+        });
         // Price configuration
         modelBuilder.Entity<Price>(entity =>
         {
@@ -70,16 +159,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(e => e.ComponentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+        modelBuilder.Entity<PCBuild>()
+       .HasOne<ApplicationUser>()
+       .WithMany(u => u.PCBuilds)
+       .HasForeignKey(p => p.UserId)
+       .OnDelete(DeleteBehavior.Cascade);
 
-        // CompatibilityRule configuration
-        modelBuilder.Entity<CompatibilityRule>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.RuleName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.ErrorMessage).IsRequired().HasMaxLength(500);
 
-            entity.HasIndex(e => new { e.SourceType, e.TargetType });
-        });
+
+
 
         // PCBuild configuration
         modelBuilder.Entity<PCBuild>(entity =>
@@ -90,24 +178,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.IsPublic);
-        });
-
-        // SearchQuery configuration
-        modelBuilder.Entity<SearchQuery>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Query).IsRequired().HasMaxLength(500);
-
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.SearchedAt);
-        });
-
-        // ScrapingJob configuration
-        modelBuilder.Entity<ScrapingJob>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.StartedAt);
-            entity.HasIndex(e => e.Retailer);
         });
     }
 }

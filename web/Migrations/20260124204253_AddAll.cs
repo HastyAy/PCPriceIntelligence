@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace web.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddAll : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -81,12 +81,14 @@ namespace web.Migrations
                     Model = table.Column<string>(type: "text", nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Manufacturer = table.Column<int>(type: "integer", nullable: false),
-                    SpecificationsJson = table.Column<string>(type: "text", nullable: true),
                     EAN = table.Column<string>(type: "text", nullable: true),
                     PartNumber = table.Column<string>(type: "text", nullable: true),
                     ImageUrl = table.Column<string>(type: "text", nullable: true),
                     AveragePrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     LowestPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    QualityScore = table.Column<double>(type: "double precision", nullable: false),
+                    OfferCount = table.Column<int>(type: "integer", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -259,6 +261,83 @@ namespace web.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CPUSpecifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    Cores = table.Column<int>(type: "integer", nullable: false),
+                    Threads = table.Column<int>(type: "integer", nullable: false),
+                    BaseClock = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    BoostClock = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
+                    TDP = table.Column<int>(type: "integer", nullable: false),
+                    Socket = table.Column<string>(type: "text", nullable: true),
+                    IntegratedGraphics = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CPUSpecifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CPUSpecifications_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "GPUSpecifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    MemoryType = table.Column<string>(type: "text", nullable: false),
+                    MemorySize = table.Column<int>(type: "integer", nullable: false),
+                    Chipset = table.Column<string>(type: "text", nullable: true),
+                    TDP = table.Column<int>(type: "integer", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GPUSpecifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GPUSpecifications_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MotherboardSpecs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    Socket = table.Column<string>(type: "text", nullable: true),
+                    Chipset = table.Column<string>(type: "text", nullable: true),
+                    FormFactor = table.Column<string>(type: "text", nullable: true),
+                    MemoryType = table.Column<string>(type: "text", nullable: true),
+                    MemorySlots = table.Column<int>(type: "integer", nullable: true),
+                    MaxMemory = table.Column<int>(type: "integer", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MotherboardSpecs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MotherboardSpecs_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PriceHistories",
                 columns: table => new
                 {
@@ -303,6 +382,76 @@ namespace web.Migrations
                     table.PrimaryKey("PK_Prices", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Prices_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PSUSpecifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    Wattage = table.Column<int>(type: "integer", nullable: false),
+                    Modular = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PSUSpecifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PSUSpecifications_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RAMSpecifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    Capacity = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: true),
+                    Speed = table.Column<int>(type: "integer", nullable: false),
+                    Timings = table.Column<string>(type: "text", nullable: true),
+                    ModuleCount = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RAMSpecifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RAMSpecifications_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StorageSpecifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ComponentId = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: true),
+                    Capacity = table.Column<int>(type: "integer", nullable: false),
+                    Interface = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StorageSpecifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StorageSpecifications_Components_ComponentId",
                         column: x => x.ComponentId,
                         principalTable: "Components",
                         principalColumn: "Id",
@@ -372,6 +521,24 @@ namespace web.Migrations
                 column: "Type");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CPUSpecifications_ComponentId",
+                table: "CPUSpecifications",
+                column: "ComponentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GPUSpecifications_ComponentId",
+                table: "GPUSpecifications",
+                column: "ComponentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MotherboardSpecs_ComponentId",
+                table: "MotherboardSpecs",
+                column: "ComponentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PCBuilds_IsPublic",
                 table: "PCBuilds",
                 column: "IsPublic");
@@ -407,6 +574,18 @@ namespace web.Migrations
                 column: "ScrapedAt");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PSUSpecifications_ComponentId",
+                table: "PSUSpecifications",
+                column: "ComponentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RAMSpecifications_ComponentId",
+                table: "RAMSpecifications",
+                column: "ComponentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ScrapingJobs_Retailer",
                 table: "ScrapingJobs",
                 column: "Retailer");
@@ -425,6 +604,12 @@ namespace web.Migrations
                 name: "IX_SearchQueries_UserId",
                 table: "SearchQueries",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StorageSpecifications_ComponentId",
+                table: "StorageSpecifications",
+                column: "ComponentId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -449,6 +634,15 @@ namespace web.Migrations
                 name: "CompatibilityRules");
 
             migrationBuilder.DropTable(
+                name: "CPUSpecifications");
+
+            migrationBuilder.DropTable(
+                name: "GPUSpecifications");
+
+            migrationBuilder.DropTable(
+                name: "MotherboardSpecs");
+
+            migrationBuilder.DropTable(
                 name: "PCBuilds");
 
             migrationBuilder.DropTable(
@@ -458,10 +652,19 @@ namespace web.Migrations
                 name: "Prices");
 
             migrationBuilder.DropTable(
+                name: "PSUSpecifications");
+
+            migrationBuilder.DropTable(
+                name: "RAMSpecifications");
+
+            migrationBuilder.DropTable(
                 name: "ScrapingJobs");
 
             migrationBuilder.DropTable(
                 name: "SearchQueries");
+
+            migrationBuilder.DropTable(
+                name: "StorageSpecifications");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

@@ -1,60 +1,114 @@
-﻿@implements IDisposable
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 
 @inject NavigationManager NavigationManager
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">web</a>
+        <a class="navbar-brand" href="">
+            <span class="bi bi-cpu-fill me-2"></span>
+            PC Price Intelligence
+        </a>
     </div>
 </div>
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
+    <nav class="flex-column">
+        <!-- Main Navigation -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="components">
-                <span class="bi bi-pc-display-horizontal" aria-hidden="true"></span> Components
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
+                Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+            <NavLink class="nav-link" href="build/new">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span>
+                Build PC
             </NavLink>
         </div>
 
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                    <NavLink class="nav-link" href="my-builds">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span>
+                        My Builds
                     </NavLink>
                 </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="components">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span>
+                Browse Components
+            </NavLink>
+        </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-divider"></div>
+
+                <div class="nav-item px-3">
+                    <div class="admin-label">
+                        <small class="text-muted">ADMIN PANEL</small>
+                    </div>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/scraper">
+                        <span class="bi bi-cloud-download me-2" aria-hidden="true"></span>
+                        Scraper Control
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        <!-- User Section -->
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-divider"></div>
+
+                <div class="nav-item px-3">
+                    <div class="user-profile">
+                        <div class="d-flex align-items-center">
+                            <span class="bi bi-person-fill-nav-menu user-icon"></span>
+                            <div class="user-details">
+                                <div class="user-name">@context.User.Identity?.Name</div>
+                                <small class="user-status">Logged in</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        <button type="submit" class="nav-link logout-btn">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span>
+                            Logout
                         </button>
                     </form>
                 </div>
             </Authorized>
+
             <NotAuthorized>
+                <div class="nav-divider"></div>
+
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span>
+                        Register
                     </NavLink>
                 </div>
+
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span>
+                        Login
                     </NavLink>
                 </div>
             </NotAuthorized>
@@ -82,4 +136,3 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
-

@@ -1,12 +1,21 @@
-﻿namespace Domain.Entities
+﻿namespace Domain.Entities;
+
+public class GPUSpecification : BaseEntity
 {
-    public class GPUSpecification : BaseEntity
-    {
-        public int VRAM { get; set; }
-        public string? Chipset { get; set; }
-        public int? CoreClock { get; set; }
-        public int? BoostClock { get; set; }
-        public int? TDP { get; set; }
-        public string? Interface { get; set; }
-    }
+    public int ComponentId { get; set; }
+    public Component Component { get; set; } = null!;
+
+    public string MemoryType { get; set; } = string.Empty;  
+    public int MemorySize { get; set; } 
+
+    public string? Chipset { get; set; }  
+
+    public int? TDP { get; set; }  
+
+    public int? LengthMM { get; set; } 
+    public int? WidthMM { get; set; }
+    public int? HeightMM { get; set; }
+
+    public int? Aux6PinCount { get; set; }  
+    public int? Aux8PinCount { get; set; }  
 }

@@ -1,0 +1,372 @@
+﻿@page "/"
+@using Domain.Entities
+@using Domain.Enums
+@using web.Services
+@inject GeminiService GeminiService
+@inject ComponentService ComponentService
+@inject NavigationManager Navigation
+@inject ILogger<Home> _logger
+@rendermode InteractiveServer
+
+<PageTitle>PC Price Intelligence</PageTitle>
+
+<div class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="display-3 fw-bold mb-4">
+                    Build Your Perfect PC
+                </h1>
+                <p class="lead mb-4">
+                    AI-powered PC building assistant that finds the best components for your needs and budget.
+                </p>
+
+                <!-- Quick Start Presets -->
+                <h5 class="mb-3"><i class="bi bi-lightning-charge"></i> Quick Start</h5>
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <button class="btn btn-outline-light btn-lg" @onclick='() => StartPresetBuild("budget-gaming")' disabled="@isLoading">
+                        <i class="bi bi-controller"></i> Budget Gaming<br />
+                        <small>~€800</small>
+                    </button>
+                    <button class="btn btn-outline-light btn-lg" @onclick='() => StartPresetBuild("mid-gaming")' disabled="@isLoading">
+                        <i class="bi bi-controller"></i> Mid-Range Gaming<br />
+                        <small>~€1,200</small>
+                    </button>
+                    <button class="btn btn-outline-light btn-lg" @onclick='() => StartPresetBuild("high-gaming")' disabled="@isLoading">
+                        <i class="bi bi-controller"></i> High-End Gaming<br />
+                        <small>~€2,000</small>
+                    </button>
+                    <button class="btn btn-outline-light btn-lg" @onclick='() => StartPresetBuild("workstation")' disabled="@isLoading">
+                        <i class="bi bi-pc-display"></i> Workstation<br />
+                        <small>~€1,500</small>
+                    </button>
+                    <button class="btn btn-outline-light btn-lg" @onclick='() => StartPresetBuild("office")' disabled="@isLoading">
+                        <i class="bi bi-briefcase"></i> Office PC<br />
+                        <small>~€500</small>
+                    </button>
+                </div>
+
+                <!-- AI Search (Optional) -->
+                <h5 class="mb-3"><i class="bi bi-robot"></i> Or Describe Your Build</h5>
+                <div class="search-box mb-4">
+                    <div class="input-group input-group-lg">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="e.g., Gaming PC for 1500€ with RTX 4070"
+                               @bind="searchQuery"
+                               @bind:event="oninput"
+                               @onkeypress="HandleKeyPress"
+                               disabled="@isLoading" />
+                        <button class="btn btn-primary"
+                                @onclick="FindComponentsWithAI"
+                                disabled="@(isLoading || string.IsNullOrWhiteSpace(searchQuery))">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-search"></i> Find
+                        </button>
+                    </div>
+                    <small class="text-light opacity-75">
+                        Try: "quiet gaming PC", "video editing workstation", "compact ITX build"
+                    </small>
+                </div>
+
+                @if (!string.IsNullOrEmpty(statusMessage))
+                {
+                    <div class="alert @(isError ? "alert-danger" : "alert-info") mt-3">
+                        @if (!isError && isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        @statusMessage
+                    </div>
+                }
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-light text-dark"><i class="bi bi-cpu"></i> Real Components</span>
+                    <span class="badge bg-light text-dark"><i class="bi bi-currency-euro"></i> Live Prices</span>
+                    <span class="badge bg-light text-dark"><i class="bi bi-check-circle"></i> Compatibility Check</span>
+                </div>
+            </div>
+
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="text-center">
+                    <i class="bi bi-pc-display-horizontal display-1 text-white opacity-50" style="font-size: 12rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container py-5">
+    <h2 class="text-center mb-5">How It Works</h2>
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100 text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3 mx-auto">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <h5 class="card-title">1. Tell Us</h5>
+                    <p class="card-text text-muted">Describe your needs or pick a preset build.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100 text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="feature-icon bg-success bg-gradient text-white rounded-circle mb-3 mx-auto">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                    <h5 class="card-title">2. We Select</h5>
+                    <p class="card-text text-muted">Smart algorithm picks the best components.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100 text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="feature-icon bg-info bg-gradient text-white rounded-circle mb-3 mx-auto">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <h5 class="card-title">3. Customize</h5>
+                    <p class="card-text text-muted">Swap any part to match your preferences.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100 text-center border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="feature-icon bg-warning bg-gradient text-white rounded-circle mb-3 mx-auto">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+                    <h5 class="card-title">4. Buy</h5>
+                    <p class="card-text text-muted">Get the best prices from Geizhals.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Browse Section -->
+<div class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Or Browse Components</h2>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex gap-2 flex-wrap justify-content-center">
+                    @foreach (var type in componentTypes)
+                    {
+                        <a href="/components?type=@type" class="btn btn-outline-primary">
+                            <i class="bi @GetComponentIcon(type)"></i> @GetTypeLabel(type)
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="/build/new" class="btn btn-primary btn-lg">
+                <i class="bi bi-tools"></i> Start Custom Build
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-box {
+        max-width: 600px;
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+        }
+
+    .btn-outline-light:hover {
+        background: rgba(255,255,255,0.2);
+    }
+</style>
+
+@code {
+    private string searchQuery = "";
+    private bool isLoading = false;
+    private bool isError = false;
+    private string? statusMessage = null;
+
+    private readonly List<ComponentType> componentTypes = new()
+    {
+        ComponentType.CPU,
+        ComponentType.GPU,
+        ComponentType.Motherboard,
+        ComponentType.RAM,
+        ComponentType.SSD,
+        ComponentType.PSU,
+        ComponentType.Case,
+        ComponentType.Cooling
+    };
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(searchQuery))
+        {
+            await FindComponentsWithAI();
+        }
+    }
+
+    /// <summary>
+    /// Quick preset builds - NO AI needed, uses algorithm
+    /// </summary>
+    private async Task StartPresetBuild(string preset)
+    {
+        isLoading = true;
+        isError = false;
+        statusMessage = "Building your configuration...";
+
+        try
+        {
+            var (budget, useCase, priority) = preset switch
+            {
+                "budget-gaming" => (800m, "gaming", "value"),
+                "mid-gaming" => (1200m, "gaming", "balanced"),
+                "high-gaming" => (2000m, "gaming", "performance"),
+                "workstation" => (1500m, "workstation", "performance"),
+                "office" => (500m, "office", "value"),
+                _ => (1000m, "gaming", "balanced")
+            };
+
+            var components = await ComponentService.BuildOptimalConfigurationAsync(budget, useCase, priority);
+
+            if (components.Any())
+            {
+                // Store in session and navigate
+                var sessionId = Guid.NewGuid().ToString("N")[..8];
+                ComponentService.StorePrebuiltConfiguration(sessionId, components);
+                Navigation.NavigateTo($"/build/new?preset={sessionId}");
+            }
+            else
+            {
+                isError = true;
+                statusMessage = "Not enough components in database. Try browsing components manually.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating preset build");
+            isError = true;
+            statusMessage = "Error creating build. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// AI-powered search for custom queries
+    /// </summary>
+    private async Task FindComponentsWithAI()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery)) return;
+
+        isLoading = true;
+        isError = false;
+        statusMessage = "Analyzing your requirements...";
+
+        try
+        {
+            // Step 1: Parse query with AI
+            var parsedQuery = await GeminiService.ParseQueryAsync(searchQuery);
+
+            if (parsedQuery == null)
+            {
+                isError = true;
+                statusMessage = "Couldn't understand your request. Try being more specific about budget and use case.";
+                return;
+            }
+
+            statusMessage = $"Finding best components for {parsedQuery.UseCase} build (~€{parsedQuery.Budget:N0})...";
+            StateHasChanged();
+
+            // Step 2: Use algorithm to select components (not AI)
+            var budget = parsedQuery.Budget ?? 1000m;
+            var useCase = parsedQuery.UseCase ?? "gaming";
+            var priority = parsedQuery.Priority ?? "balanced";
+
+            var components = await ComponentService.BuildOptimalConfigurationAsync(budget, useCase, priority);
+
+            if (components.Any())
+            {
+                var sessionId = Guid.NewGuid().ToString("N")[..8];
+                ComponentService.StorePrebuiltConfiguration(sessionId, components);
+                Navigation.NavigateTo($"/build/new?preset={sessionId}");
+            }
+            else
+            {
+                isError = true;
+                statusMessage = "No matching components found. Try adjusting your budget or requirements.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in AI search: {Message}", ex.Message);
+            isError = true;
+            statusMessage = "Error processing request. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetTypeLabel(ComponentType type) => type switch
+    {
+        ComponentType.CPU => "CPUs",
+        ComponentType.GPU => "Graphics Cards",
+        ComponentType.RAM => "Memory",
+        ComponentType.Motherboard => "Motherboards",
+        ComponentType.PSU => "Power Supplies",
+        ComponentType.Case => "Cases",
+        ComponentType.Cooling => "Coolers",
+        ComponentType.SSD => "Storage",
+        _ => type.ToString()
+    };
+
+    private string GetComponentIcon(ComponentType type) => type switch
+    {
+        ComponentType.CPU => "bi-cpu",
+        ComponentType.GPU => "bi-gpu-card",
+        ComponentType.RAM => "bi-memory",
+        ComponentType.Motherboard => "bi-motherboard",
+        ComponentType.PSU => "bi-lightning-charge",
+        ComponentType.Case => "bi-pc-display",
+        ComponentType.Cooling => "bi-fan",
+        ComponentType.SSD => "bi-device-hdd",
+        _ => "bi-box"
+    };
+}
