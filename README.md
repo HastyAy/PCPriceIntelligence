@@ -48,7 +48,7 @@ A web-based PC configuration and compatibility platform built with Blazor Server
 
 5. **Access the app**
    - URL: `https://localhost:5001`
-   - Admin: `admin@pcbuilder.com` / `Admin123!`
+   - Admin credentials: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` as environment variables before the first run; `ADMIN_PASSWORD` is required (startup fails if unset).
 
 ---
 
@@ -76,7 +76,7 @@ A web-based PC configuration and compatibility platform built with Blazor Server
 
 4. **Access the app**
    - URL: `http://localhost:8080`
-   - Admin: `admin@pcbuilder.com` / `Admin123!`
+   - Admin credentials: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` as environment variables before the first run; `ADMIN_PASSWORD` is required (startup fails if unset).
 
 ---
 
@@ -87,7 +87,7 @@ A web-based PC configuration and compatibility platform built with Blazor Server
 | `ConnectionStrings__DefaultConnection` | PostgreSQL connection string | - |
 | `Gemini__ApiKey` | Google Gemini API key | - |
 | `ADMIN_EMAIL` | Admin user email | `admin@pcbuilder.com` |
-| `ADMIN_PASSWORD` | Admin user password | `Admin123!` |
+| `ADMIN_PASSWORD` | Admin user password | *required* — startup fails if unset |
 
 ## Features
 

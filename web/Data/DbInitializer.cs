@@ -9,15 +9,18 @@ public static class DbInitializer
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
-        // Create Admin role if it doesn't exist
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        // Create default admin user
-        var adminEmail = "admin@pcbuilder.com";
+        var adminEmail = configuration["ADMIN_EMAIL"] ?? "admin@pcbuilder.com";
+        var adminPassword = configuration["ADMIN_PASSWORD"]
+            ?? throw new InvalidOperationException(
+                "ADMIN_PASSWORD is not configured. Set the ADMIN_PASSWORD environment variable before the first run.");
+
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
         if (adminUser == null)
@@ -29,7 +32,7 @@ public static class DbInitializer
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(adminUser, "Admin123!"); // Change this password!
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
 
             if (result.Succeeded)
             {
