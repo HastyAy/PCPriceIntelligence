@@ -5,11 +5,16 @@ namespace web.Services;
 
 public class CompatibilityService
 {
+    // Headroom factor on GPU TDP to cover transient power spikes under load.
+    private const double GpuTransientHeadroomFactor = 1.5;
+
+    // Baseline wattage attributed to motherboard, RAM, drives, and fans.
+    private const int BaselineSystemWattage = 100;
+
     public CompatibilityResult RunPreCompatibilityChecks(
         IReadOnlyDictionary<ComponentType, Component> selected)
     {
         var errors = new List<string>();
-        var warnings = new List<string>();
 
         var cpu = selected.GetValueOrDefault(ComponentType.CPU);
         var mb = selected.GetValueOrDefault(ComponentType.Motherboard);
@@ -80,8 +85,8 @@ public class CompatibilityService
 
             var estimatedLoad =
                 cpuTdp +
-                (int)(gpuTdp * 1.5) +
-                100;
+                (int)(gpuTdp * GpuTransientHeadroomFactor) +
+                BaselineSystemWattage;
 
             if (psuWattage < estimatedLoad)
             {
@@ -112,51 +117,37 @@ public class CompatibilityService
         return new CompatibilityResult
         {
             Compatible = errors.Count == 0,
-            Errors = errors,
-            Warnings = warnings
+            Errors = errors
         };
     }
     private static HashSet<string> GetSupportedMotherboardFormFactors(string caseFormFactor)
     {
-        var value = caseFormFactor.ToLowerInvariant();
-
-        var supported = new HashSet<string>();
-
-        // Small cases
-        if (value.Contains("itx"))
+        // Map case class -> boards it physically accepts. A larger case always
+        // accepts smaller boards; small cases do not accept larger ones.
+        var ff = NormalizeCaseFormFactor(caseFormFactor);
+        return ff switch
         {
-            supported.Add("mini-itx");
-            supported.Add("dtx");
-        }
+            "mini-itx"   => new() { "mini-itx" },
+            "micro-atx"  => new() { "mini-itx", "micro-atx" },
+            "atx"        => new() { "mini-itx", "micro-atx", "atx" },
+            "e-atx"      => new() { "mini-itx", "micro-atx", "atx", "e-atx" },
+            "full-tower" => new() { "mini-itx", "micro-atx", "atx", "e-atx" },
+            _            => new HashSet<string>()
+        };
+    }
 
-        // Midi / Mid tower (MOST common)
-        if (value.Contains("midi") || value.Contains("mid"))
-        {
-            supported.Add("mini-itx");
-            supported.Add("micro-atx");
-            supported.Add("atx");
-        }
+    private static string NormalizeCaseFormFactor(string value)
+    {
+        value = value.ToLowerInvariant();
 
-        // Full tower
-        if (value.Contains("full"))
-        {
-            supported.Add("mini-itx");
-            supported.Add("micro-atx");
-            supported.Add("atx");
-            supported.Add("e-atx");
-        }
+        // Order matters: more specific terms before their substrings.
+        if (value.Contains("full")) return "full-tower";
+        if (value.Contains("e-atx") || value.Contains("eatx")) return "e-atx";
+        if (value.Contains("micro") || value.Contains("matx") || value.Contains("µatx")) return "micro-atx";
+        if (value.Contains("itx")) return "mini-itx";
+        if (value.Contains("midi") || value.Contains("mid") || value.Contains("atx")) return "atx";
 
-        // Explicit listings (best case)
-        if (value.Contains("atx"))
-            supported.Add("atx");
-
-        if (value.Contains("micro"))
-            supported.Add("micro-atx");
-
-        if (value.Contains("mini"))
-            supported.Add("mini-itx");
-
-        return supported;
+        return value;
     }
 
     private static string NormalizeMotherboardFormFactor(string value)

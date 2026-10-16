@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local editor / assistant working notes
+REPO_CLEANUP_BRIEF.md
+CLAUDE.md
+.claude/
+*.claude.md
+claude-*.md
+.anthropic/

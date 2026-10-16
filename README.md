@@ -2,9 +2,13 @@
 
 A web-based PC configuration and compatibility platform built with Blazor Server.
 
+> Portfolio project, 2025–2026. Built to practise Blazor Server, EF Core with PostgreSQL,
+> and integrating a hosted LLM (Gemini) into a .NET web app. The code is not covered by
+> automated tests, and the compatibility rules are heuristic rather than exhaustive.
+
 ## Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [PostgreSQL](https://www.postgresql.org/download/) (or use Docker)
 - [Google Gemini API Key](https://makersuite.google.com/app/apikey)
 
@@ -14,8 +18,8 @@ A web-based PC configuration and compatibility platform built with Blazor Server
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/pc-price-intelligence.git
-   cd pc-price-intelligence
+   git clone https://github.com/HastyAy/PCPriceIntelligence.git
+   cd PCPriceIntelligence
    ```
 
 2. **Configure the application**
@@ -52,8 +56,8 @@ A web-based PC configuration and compatibility platform built with Blazor Server
 
 1. **Clone and navigate**
    ```bash
-   git clone https://github.com/yourusername/pc-price-intelligence.git
-   cd pc-price-intelligence
+   git clone https://github.com/HastyAy/PCPriceIntelligence.git
+   cd PCPriceIntelligence
    ```
 
 2. **Set your Gemini API key**
